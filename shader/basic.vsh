@@ -7,6 +7,8 @@ varying lowp float time;
 
 void main() {
     gl_Position = vec4(aPosition, 1);
-    pos = aPosition;
+    gl_Position.x += sin(uTime * 2. + gl_Position.y) * .4;
+
+    pos = gl_Position.xyz;
     time = uTime;
 }

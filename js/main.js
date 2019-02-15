@@ -6,6 +6,11 @@ const triangleVertices = new Float32Array([
     -0.5, -0.5, 0.0,  // bottom let
     -0.5,  0.5, 0.0,  // top let
 ]);
+const triangleColors = new Float32Array([
+    1.0, 0.0, 0.0,
+    0.0, 1.0, 0.0,
+    0.0, 0.0, 1.0,
+]);
 const triangleIndices = new Uint16Array([
     0, 1, 3,   // first triangle
     1, 2, 3,   // second triangle
