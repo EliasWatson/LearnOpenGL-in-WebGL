@@ -1,9 +1,14 @@
 let gl, scene;
 
 const triangleVertices = new Float32Array([
-    -0.5, -0.5, 0.0,
-     0.5, -0.5, 0.0,
-     0.0,  0.5, 0.0,
+     0.5,  0.5, 0.0,  // top right
+     0.5, -0.5, 0.0,  // bottom right
+    -0.5, -0.5, 0.0,  // bottom let
+    -0.5,  0.5, 0.0,  // top let
+]);
+const triangleIndices = new Uint16Array([
+    0, 1, 3,   // first triangle
+    1, 2, 3,   // second triangle
 ]);
 
 main();
@@ -34,7 +39,9 @@ function renderScene(deltatime) {
     );
 
     gl.useProgram(scene.shaders.basic.program);
-    gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, scene.buffers.index);
+    gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
 }
 
 function loadShaders() {
@@ -47,4 +54,5 @@ function loadShaders() {
 
 function loadBuffers() {
     scene.buffers.position = loadBuffer(gl, triangleVertices, gl.ARRAY_BUFFER, gl.STATIC_DRAW);
+    scene.buffers.index = loadBuffer(gl, triangleIndices, gl.ELEMENT_ARRAY_BUFFER, gl.STATIC_DRAW);
 }
