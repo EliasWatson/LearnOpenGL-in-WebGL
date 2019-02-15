@@ -57,6 +57,11 @@ function renderScene(time, deltatime) {
     );
 
     gl.useProgram(scene.shaders.basic.program);
+
+    let worldMatrix = mat4.create();
+    mat4.rotate(worldMatrix, worldMatrix, time, [0, 0, 1]);
+
+    gl.uniformMatrix4fv(scene.shaders.basic.uniforms.uWorldMatrix, false, worldMatrix);
     gl.uniform1f(scene.shaders.basic.uniforms.uTime, time);
 
     gl.activeTexture(gl.TEXTURE0);
@@ -78,7 +83,7 @@ function loadShaders() {
 
     scene.shaders.basic = loadShader(gl, basicVsh, basicFsh,
         ["aPosition", "aUV"],
-        ["uTime", "uAlbedoSampler", "uAOSampler"]);
+        ["uWorldMatrix", "uTime", "uAlbedoSampler", "uAOSampler"]);
 }
 
 function loadBuffers() {
