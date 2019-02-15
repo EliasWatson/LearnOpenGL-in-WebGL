@@ -91,7 +91,7 @@ function setRenderFunction(render) {
         const deltatime = now - then;
         then = now;
 
-        render(deltatime);
+        render(now, deltatime);
         requestAnimationFrame(draw);
     }
 

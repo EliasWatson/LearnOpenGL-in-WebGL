@@ -23,7 +23,7 @@ function main() {
     setRenderFunction(renderScene);
 }
 
-function renderScene(deltatime) {
+function renderScene(time, deltatime) {
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT);
 
@@ -39,6 +39,7 @@ function renderScene(deltatime) {
     );
 
     gl.useProgram(scene.shaders.basic.program);
+    gl.uniform1f(scene.shaders.basic.uniforms.uTime, time);
 
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, scene.buffers.index);
     gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
@@ -49,7 +50,7 @@ function loadShaders() {
     downloadData("shader/basic.vsh", data => basicVsh = data);
     downloadData("shader/basic.fsh", data => basicFsh = data);
 
-    scene.shaders.basic = loadShader(gl, basicVsh, basicFsh, ["aPosition"], []);
+    scene.shaders.basic = loadShader(gl, basicVsh, basicFsh, ["aPosition"], ["uTime"]);
 }
 
 function loadBuffers() {
