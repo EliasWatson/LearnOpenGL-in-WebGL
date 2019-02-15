@@ -63,6 +63,10 @@ function renderScene(time, deltatime) {
     gl.bindTexture(gl.TEXTURE_2D, scene.textures.albedo);
     gl.uniform1i(scene.shaders.basic.uniforms.uAlbedoSampler, 0);
 
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, scene.textures.ao);
+    gl.uniform1i(scene.shaders.basic.uniforms.uAOSampler, 1);
+
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, scene.buffers.index);
     gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
 }
@@ -74,7 +78,7 @@ function loadShaders() {
 
     scene.shaders.basic = loadShader(gl, basicVsh, basicFsh,
         ["aPosition", "aUV"],
-        ["uTime", "uAlbedoSampler"]);
+        ["uTime", "uAlbedoSampler", "uAOSampler"]);
 }
 
 function loadBuffers() {
@@ -85,4 +89,5 @@ function loadBuffers() {
 
 function loadTextures() {
     scene.textures.albedo = loadTexture(gl, "img/Tiles28_col.jpg");
+    scene.textures.ao = loadTexture(gl, "img/Tiles28_AO.jpg");
 }
