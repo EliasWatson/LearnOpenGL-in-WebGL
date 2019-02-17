@@ -1,61 +1,169 @@
-// Shaders
-function loadShader(gl, vs, fs, attributes, uniforms) {
-    const shaderProgram = createShaderProgram(gl, vs, fs);
-    if(shaderProgram == null) return null;
+class Entity {
+    constructor() {
+        this.position = [0, 0, 0];
+        this.rotation = [0, 0, 0];
+        this.scale = [1, 1, 1];
+        this.buffers = { position: null, index: null, };
+        this.textures = {};
+        this.shader = null;
+    }
 
-    let programInfo = {
-        program: shaderProgram,
-        attributes: {},
-        uniforms: {},
-    };
-
-    attributes.forEach(attribute =>
-        programInfo.attributes[attribute] = gl.getAttribLocation(shaderProgram, attribute));
-
-    uniforms.forEach(uniform =>
-        programInfo.uniforms[uniform] = gl.getUniformLocation(shaderProgram, uniform));
-
-    return programInfo;
+    draw(gl) {
+        for(let i in this.textures) this.textures[i].load(gl);
+        this.shader.load(gl);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.buffers.index);
+        gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
+    }
 }
 
-function createShaderProgram(gl, vs, fs) {
-    const vertexShader = compileShader(gl, gl.VERTEX_SHADER, vs);
-    const fragmentShader = compileShader(gl, gl.FRAGMENT_SHADER, fs);
-    if(vertexShader == null || fragmentShader == null) return null;
+class glShader {
+    constructor(gl, vertexSrc, fragmentSrc, attributes, uniforms) {
+        this.program = this._createShaderProgram(gl, vertexSrc, fragmentSrc);
+        if(this.program == null) return;
 
-    const shaderProgram = gl.createProgram();
-    gl.attachShader(shaderProgram, vertexShader);
-    gl.attachShader(shaderProgram, fragmentShader);
-    gl.linkProgram(shaderProgram);
-    gl.deleteShader(vertexShader);
-    gl.deleteShader(fragmentShader);
+        this.attributes = attributes;
+        this.attributes.forEach(attr => attr.location = gl.getAttribLocation(this.program, attr.name));
 
-    if(!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
-        alert("Shader linking failed: " + gl.getProgramInfoLog(shaderProgram));
+        this.uniforms = uniforms;
+        this.uniforms.forEach(unif => unif.location = gl.getUniformLocation(this.program, unif.name));
+    }
+
+    load(gl) {
+        gl.useProgram(this.program);
+        this.attributes.forEach(attr => attr.load(gl));
+        this.uniforms.forEach(unif => unif.load(gl));
+    }
+
+    getAttribute(name) {
+        let i;
+        for(i in this.attributes) {
+            const attr = this.attributes[i];
+            if (attr.name === name)
+                return attr;
+        }
         return null;
     }
 
-    return shaderProgram;
-}
-
-function compileShader(gl, type, source) {
-    const shader = gl.createShader(type);
-    gl.shaderSource(shader, source);
-    gl.compileShader(shader);
-
-    if(!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-        alert("Shader compilation failed: " + gl.getShaderInfoLog(shader));
-        gl.deleteShader(shader);
+    getUniform(name) {
+        let i;
+        for(i in this.uniforms) {
+            const unif = this.uniforms[i];
+            if (unif.name === name)
+                return unif;
+        }
         return null;
     }
 
-    return shader;
+    _createShaderProgram(gl, vertexSrc, fragmentSrc) {
+        const vertexShader = this._compileShader(gl, gl.VERTEX_SHADER, vertexSrc);
+        const fragmentShader = this._compileShader(gl, gl.FRAGMENT_SHADER, fragmentSrc);
+        if(vertexShader == null || fragmentShader == null) return null;
+
+        const shaderProgram = gl.createProgram();
+        gl.attachShader(shaderProgram, vertexShader);
+        gl.attachShader(shaderProgram, fragmentShader);
+        gl.linkProgram(shaderProgram);
+        gl.deleteShader(vertexShader);
+        gl.deleteShader(fragmentShader);
+
+        if(!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+            alert("Shader linking failed: " + gl.getProgramInfoLog(shaderProgram));
+            return null;
+        }
+
+        return shaderProgram;
+    }
+
+    _compileShader(gl, type, source) {
+        const shader = gl.createShader(type);
+        gl.shaderSource(shader, source);
+        gl.compileShader(shader);
+
+        if(!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+            alert("Shader compilation failed: " + gl.getShaderInfoLog(shader));
+            gl.deleteShader(shader);
+            return null;
+        }
+
+        return shader;
+    }
 }
 
-function loadAttribute(gl, buffer, bufferType, attribute, numComponents, componentType, normalize, offset) {
-    gl.bindBuffer(bufferType, buffer);
-    gl.vertexAttribPointer(attribute, numComponents, componentType, normalize, 0, offset);
-    gl.enableVertexAttribArray(attribute);
+class glAttribute {
+    constructor(name, buffer, bufferType, numComponents, componentType, normalize, offset) {
+        this.name = name;
+        this.location = -1;
+        this.buffer = buffer;
+        this.bufferType = bufferType;
+        this.numComponents = numComponents;
+        this.componentType = componentType;
+        this.normalize = normalize;
+        this.offset = offset;
+    }
+
+    load(gl) {
+        if(this.location === -1) return;
+        gl.bindBuffer(this.bufferType, this.buffer);
+        gl.vertexAttribPointer(this.location, this.numComponents, this.componentType, this.normalize, 0, this.offset);
+        gl.enableVertexAttribArray(this.location);
+    }
+}
+
+class glUniform {
+    constructor(name, data, type) {
+        this.name = name;
+        this.location = -1;
+        this.data = data;
+        this.type = type;
+    }
+
+    load(gl) {
+        gl["uniform" + this.type].apply(gl, [this.location].concat(this.data));
+    }
+}
+
+class glTexture {
+    constructor(gl, location, url) {
+        this.id = this._createTexture(gl);
+        this.location = location;
+
+        const glTex = this;
+        this.image = new Image();
+        this.image.onload = function() {
+            gl.bindTexture(gl.TEXTURE_2D, glTex.id);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, glTex.image);
+
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+
+            if (glTex._isPowerOf2(glTex.image.width) && glTex._isPowerOf2(glTex.image.height)) {
+                gl.generateMipmap(gl.TEXTURE_2D);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+            } else {
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+            }
+        };
+        this.image.src = url;
+    }
+
+    load(gl) {
+        gl.activeTexture(gl["TEXTURE" + this.location]);
+        gl.bindTexture(gl.TEXTURE_2D, this.id);
+    }
+
+    _createTexture(gl) {
+        const texture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.texImage2D(
+            gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE,
+            new Uint8Array([255, 0, 255, 255]));
+        return texture;
+    }
+
+    _isPowerOf2(n) {
+        return (n & (n - 1)) === 0;
+    }
 }
 
 // Buffers
@@ -64,40 +172,6 @@ function loadBuffer(gl, data, type, drawType) {
     gl.bindBuffer(type, buffer);
     gl.bufferData(type, data, drawType);
     return buffer;
-}
-
-// Texture
-function loadTexture(gl, url) {
-    const texture = createTexture(gl);
-
-    const image = new Image();
-    image.onload = function() {
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-
-        if (isPowerOf2(image.width) && isPowerOf2(image.height)) {
-            gl.generateMipmap(gl.TEXTURE_2D);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-        } else {
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-        }
-    };
-    image.src = url;
-
-    return texture;
-}
-
-function createTexture(gl) {
-    const texture = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.texImage2D(
-        gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE,
-        new Uint8Array([255, 0, 255, 255]));
-    return texture;
 }
 
 // Utility
@@ -132,14 +206,6 @@ function setRenderFunction(render) {
     requestAnimationFrame(draw);
 }
 
-function createBlankScene() {
-    return {
-        shaders: {},
-        buffers: {},
-        textures: {},
-    };
-}
-
 function downloadData(url, callback, async = false) {
     let xmlhttp = window.XMLHttpRequest ? new XMLHttpRequest() : new ActiveXObject("Microsoft.XMLHTTP");
     xmlhttp.onreadystatechange = function() {
@@ -148,8 +214,4 @@ function downloadData(url, callback, async = false) {
     };
     xmlhttp.open("GET", url, async);
     xmlhttp.send();
-}
-
-function isPowerOf2(n) {
-    return (n & (n - 1)) === 0;
 }

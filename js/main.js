@@ -1,4 +1,4 @@
-let gl, scene;
+let gl, scene = {};
 
 const triangleVertices = new Float32Array([
      0.5,  0.5, 0.0,  // top right
@@ -21,11 +21,32 @@ main();
 
 function main() {
     gl = getGL();
-    scene = createBlankScene();
 
-    loadShaders();
-    loadBuffers();
-    loadTextures();
+    {
+        let rect = new Entity();
+        rect.buffers.position = loadBuffer(gl, triangleVertices, gl.ARRAY_BUFFER, gl.STATIC_DRAW);
+        rect.buffers.index = loadBuffer(gl, triangleIndices, gl.ELEMENT_ARRAY_BUFFER, gl.STATIC_DRAW);
+        rect.buffers.uv = loadBuffer(gl, triangleUV, gl.ARRAY_BUFFER, gl.STATIC_DRAW);
+        rect.textures.albedo = new glTexture(gl, 0, "img/Tiles28_col.jpg");
+        rect.textures.ao = new glTexture(gl, 1, "img/Tiles28_AO.jpg");
+
+        let basicVsh = "", basicFsh = "";
+        downloadData("shader/basic.vsh", data => basicVsh = data);
+        downloadData("shader/basic.fsh", data => basicFsh = data);
+        rect.shader = new glShader(gl, basicVsh, basicFsh,
+            [
+                new glAttribute("aPosition", rect.buffers.position, gl.ARRAY_BUFFER, 3, gl.FLOAT, false, 0),
+                new glAttribute("aUV", rect.buffers.uv, gl.ARRAY_BUFFER, 2, gl.FLOAT, false, 0),
+            ],
+            [
+                new glUniform("uWorldMatrix", [false, mat4.create()], "Matrix4fv"),
+                new glUniform("uTime", [0.0], "1f"),
+                new glUniform("uAlbedoSampler", [0], "1i"),
+                new glUniform("uAOSampler", [1], "1i"),
+            ]);
+
+        scene.rect = rect;
+    }
 
     setRenderFunction(renderScene);
 }
@@ -34,65 +55,9 @@ function renderScene(time, deltatime) {
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT);
 
-    loadAttribute(
-        gl,
-        scene.buffers.position,
-        gl.ARRAY_BUFFER,
-        scene.shaders.basic.attributes.aPosition,
-        3,
-        gl.FLOAT,
-        false,
-        0
-    );
-
-    loadAttribute(
-        gl,
-        scene.buffers.uv,
-        gl.ARRAY_BUFFER,
-        scene.shaders.basic.attributes.aUV,
-        2,
-        gl.FLOAT,
-        false,
-        0
-    );
-
-    gl.useProgram(scene.shaders.basic.program);
-
     let worldMatrix = mat4.create();
     mat4.rotate(worldMatrix, worldMatrix, time, [0, 0, 1]);
-
-    gl.uniformMatrix4fv(scene.shaders.basic.uniforms.uWorldMatrix, false, worldMatrix);
-    gl.uniform1f(scene.shaders.basic.uniforms.uTime, time);
-
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, scene.textures.albedo);
-    gl.uniform1i(scene.shaders.basic.uniforms.uAlbedoSampler, 0);
-
-    gl.activeTexture(gl.TEXTURE1);
-    gl.bindTexture(gl.TEXTURE_2D, scene.textures.ao);
-    gl.uniform1i(scene.shaders.basic.uniforms.uAOSampler, 1);
-
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, scene.buffers.index);
-    gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
-}
-
-function loadShaders() {
-    let basicVsh = "", basicFsh = "";
-    downloadData("shader/basic.vsh", data => basicVsh = data);
-    downloadData("shader/basic.fsh", data => basicFsh = data);
-
-    scene.shaders.basic = loadShader(gl, basicVsh, basicFsh,
-        ["aPosition", "aUV"],
-        ["uWorldMatrix", "uTime", "uAlbedoSampler", "uAOSampler"]);
-}
-
-function loadBuffers() {
-    scene.buffers.position = loadBuffer(gl, triangleVertices, gl.ARRAY_BUFFER, gl.STATIC_DRAW);
-    scene.buffers.index = loadBuffer(gl, triangleIndices, gl.ELEMENT_ARRAY_BUFFER, gl.STATIC_DRAW);
-    scene.buffers.uv = loadBuffer(gl, triangleUV, gl.ARRAY_BUFFER, gl.STATIC_DRAW);
-}
-
-function loadTextures() {
-    scene.textures.albedo = loadTexture(gl, "img/Tiles28_col.jpg");
-    scene.textures.ao = loadTexture(gl, "img/Tiles28_AO.jpg");
+    scene.rect.shader.getUniform("uWorldMatrix").data = [false, worldMatrix];
+    scene.rect.shader.getUniform("uTime").data = [time];
+    scene.rect.draw(gl);
 }
