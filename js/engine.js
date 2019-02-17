@@ -14,6 +14,16 @@ class Entity {
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.buffers.index);
         gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
     }
+
+    getWorldMatrix() {
+        const worldMatrix = mat4.create();
+        mat4.translate(worldMatrix, worldMatrix, this.position);
+        mat4.rotate(worldMatrix, worldMatrix, this.rotation[0], [1, 0, 0]);
+        mat4.rotate(worldMatrix, worldMatrix, this.rotation[1], [0, 1, 0]);
+        mat4.rotate(worldMatrix, worldMatrix, this.rotation[2], [0, 0, 1]);
+        mat4.scale(worldMatrix, worldMatrix, this.scale);
+        return worldMatrix;
+    }
 }
 
 class glShader {
