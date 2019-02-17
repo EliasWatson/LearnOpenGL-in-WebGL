@@ -190,13 +190,19 @@ function getGL() {
     const canvas = document.querySelector(canvasName);
     canvas.width = document.body.clientWidth;
     canvas.height = document.body.clientHeight;
-
     const gl = canvas.getContext("webgl");
 
     if(gl === null) {
         alert("WebGL is not supported in this browser");
         return null;
     }
+
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    window.addEventListener("resize", function() {
+        canvas.width = document.body.clientWidth;
+        canvas.height = document.body.clientHeight;
+        gl.viewport(0, 0, canvas.width, canvas.height);
+    });
 
     return gl;
 }

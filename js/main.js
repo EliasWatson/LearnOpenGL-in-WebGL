@@ -23,10 +23,10 @@ function main() {
     gl = getGL();
 
     tMakeRect(gl, "rect");
-    scene.rect.position = [0, 0.5, 0];
+    scene.rect.position = [0, 0.2, -4];
 
     tMakeRect(gl, "rect2");
-    scene.rect2.position = [0.5, 0, 0];
+    scene.rect2.position = [0, -0.2, -2];
 
     setRenderFunction(renderScene);
 }
@@ -38,10 +38,15 @@ function renderScene(time, deltatime) {
     for(let i in scene) {
         let rect = scene[i];
 
-        rect.rotation[2] = time;
+        rect.rotation[2] = time * rect.position[2];
+        rect.position[0] = Math.sin(time);
         let worldMatrix = rect.getWorldMatrix();
 
+        const viewMatrix = mat4.create();
+        mat4.perspective(viewMatrix, 45 * Math.PI / 180, document.body.clientWidth / document.body.clientHeight, 0.1, 100);
+
         rect.shader.getUniform("uWorldMatrix").data = [false, worldMatrix];
+        rect.shader.getUniform("uViewMatrix").data = [false, viewMatrix];
         rect.shader.getUniform("uTime").data = [time];
         rect.draw(gl);
     }
@@ -65,6 +70,7 @@ function tMakeRect(gl, name) {
         ],
         [
             new glUniform("uWorldMatrix", [false, mat4.create()], "Matrix4fv"),
+            new glUniform("uViewMatrix", [false, mat4.create()], "Matrix4fv"),
             new glUniform("uTime", [0.0], "1f"),
             new glUniform("uAlbedoSampler", [0], "1i"),
             new glUniform("uAOSampler", [1], "1i"),
