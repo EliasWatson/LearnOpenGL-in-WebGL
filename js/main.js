@@ -78,14 +78,32 @@ const triangleIndices = new Uint16Array([
     20, 21, 22,     20, 22, 23,   // left
 ]);
 
+const cubePositions = [
+    [ 0.0,  0.0,  0.0],
+    [ 2.0,  5.0, -15.0],
+    [-1.5, -2.2, -2.5],
+    [-3.8, -2.0, -12.3],
+    [ 2.4, -0.4, -3.5],
+    [-1.7,  3.0, -7.5],
+    [ 1.3, -2.0, -2.5],
+    [ 1.5,  2.0, -2.5],
+    [ 1.5,  0.2, -1.5],
+    [-1.3,  1.0, -1.5],
+];
+
 main();
 
 function main() {
     gl = getGL();
     gl.enable(gl.DEPTH_TEST);
 
-    tMakeRect(gl, "rect");
-    scene.rect.rotation = [-55 * Math.PI / 180, 0, 0];
+    for(let i = 0; i < 10; ++i) {
+        tMakeRect(gl, "rect" + i);
+        scene["rect" + i].position = cubePositions[i];
+
+        const angle = (20 * i) * Math.PI / 180;
+        scene["rect" + i].rotation = [angle, angle*0.3, angle*0.5];
+    }
 
     setRenderFunction(renderScene);
 }
@@ -97,11 +115,13 @@ function renderScene(time, deltatime) {
     for(let i in scene) {
         let rect = scene[i];
 
-        rect.rotation = [time * 0.5, time, 0];
         const worldMatrix = rect.getWorldMatrix();
 
         const viewMatrix = mat4.create();
-        mat4.translate(viewMatrix, viewMatrix, [0, 0, -3]);
+        const radius = 10;
+        const camX = Math.sin(time) * radius;
+        const camZ = Math.cos(time) * radius;
+        mat4.lookAt(viewMatrix, [camX, 0, camZ], [0, 0, 0], [0, 1, 0]);
 
         const projectionMatrix = mat4.create();
         mat4.perspective(projectionMatrix, 45 * Math.PI / 180, document.body.clientWidth / document.body.clientHeight, 0.1, 100);
