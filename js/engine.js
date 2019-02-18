@@ -4,6 +4,7 @@ class Entity {
         this.rotation = [0, 0, 0];
         this.scale = [1, 1, 1];
         this.buffers = { position: null, index: null, };
+        this.vertexCount = 0;
         this.textures = {};
         this.shader = null;
     }
@@ -12,7 +13,7 @@ class Entity {
         for(let i in this.textures) this.textures[i].load(gl);
         this.shader.load(gl);
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.buffers.index);
-        gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
+        gl.drawElements(gl.TRIANGLES, this.vertexCount, gl.UNSIGNED_SHORT, 0);
     }
 
     getWorldMatrix() {
