@@ -37,6 +37,43 @@ const triangleVertices = new Float32Array([
     -0.5,  0.5,  0.5,
     -0.5,  0.5, -0.5,
 ]);
+const triangleNormals = new Float32Array([
+    // Front
+    0.0,  0.0,  1.0,
+    0.0,  0.0,  1.0,
+    0.0,  0.0,  1.0,
+    0.0,  0.0,  1.0,
+
+    // Back
+    0.0,  0.0, -1.0,
+    0.0,  0.0, -1.0,
+    0.0,  0.0, -1.0,
+    0.0,  0.0, -1.0,
+
+    // Top
+    0.0,  1.0,  0.0,
+    0.0,  1.0,  0.0,
+    0.0,  1.0,  0.0,
+    0.0,  1.0,  0.0,
+
+    // Bottom
+    0.0, -1.0,  0.0,
+    0.0, -1.0,  0.0,
+    0.0, -1.0,  0.0,
+    0.0, -1.0,  0.0,
+
+    // Right
+    1.0,  0.0,  0.0,
+    1.0,  0.0,  0.0,
+    1.0,  0.0,  0.0,
+    1.0,  0.0,  0.0,
+
+    // Left
+    -1.0,  0.0,  0.0,
+    -1.0,  0.0,  0.0,
+    -1.0,  0.0,  0.0,
+    -1.0,  0.0,  0.0
+]);
 const triangleUV = new Float32Array([
     // Front
     0.0,  0.0,
@@ -99,10 +136,15 @@ function main() {
 
     for(let i = 0; i < 10; ++i) {
         tMakeRect(gl, "rect" + i);
-        scene["rect" + i].position = cubePositions[i];
+        const rect = scene["rect" + i];
+        rect.position = cubePositions[i];
 
         const angle = (20 * i) * Math.PI / 180;
-        scene["rect" + i].rotation = [angle, angle*0.3, angle*0.5];
+        rect.rotation = [angle, angle*0.3, angle*0.5];
+
+        rect.shader.getUniform("uAmbientLightColor").data = [0, 0, 0];
+        rect.shader.getUniform("uSunDirection").data = [1/3, 1/3, 1/3];
+        rect.shader.getUniform("uSunColor").data = [1, 1, 1];
     }
 
     setRenderFunction(renderScene);
@@ -137,6 +179,7 @@ function renderScene(time, deltatime) {
 function tMakeRect(gl, name) {
     let rect = new Entity();
     rect.buffers.position = loadBuffer(gl, triangleVertices, gl.ARRAY_BUFFER, gl.STATIC_DRAW);
+    rect.buffers.normal = loadBuffer(gl, triangleNormals, gl.ARRAY_BUFFER, gl.STATIC_DRAW);
     rect.buffers.index = loadBuffer(gl, triangleIndices, gl.ELEMENT_ARRAY_BUFFER, gl.STATIC_DRAW);
     rect.buffers.uv = loadBuffer(gl, triangleUV, gl.ARRAY_BUFFER, gl.STATIC_DRAW);
     rect.textures.albedo = new glTexture(gl, 0, "img/Tiles28_col.jpg");
@@ -149,6 +192,7 @@ function tMakeRect(gl, name) {
     rect.shader = new glShader(gl, basicVsh, basicFsh,
         [
             new glAttribute("aPosition", rect.buffers.position, gl.ARRAY_BUFFER, 3, gl.FLOAT, false, 0),
+            new glAttribute("aNormal", rect.buffers.normal, gl.ARRAY_BUFFER, 3, gl.FLOAT, false, 0),
             new glAttribute("aUV", rect.buffers.uv, gl.ARRAY_BUFFER, 2, gl.FLOAT, false, 0),
         ],
         [
@@ -158,6 +202,9 @@ function tMakeRect(gl, name) {
             new glUniform("uTime", [0.0], "1f"),
             new glUniform("uAlbedoSampler", [0], "1i"),
             new glUniform("uAOSampler", [1], "1i"),
+            new glUniform("uAmbientLightColor", [0, 0, 0], "3f"),
+            new glUniform("uSunDirection", [0, 0, 0], "3f"),
+            new glUniform("uSunColor", [1, 1, 1], "3f"),
         ]);
 
     scene[name] = rect;
