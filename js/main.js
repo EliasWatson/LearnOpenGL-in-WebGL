@@ -82,6 +82,7 @@ main();
 
 function main() {
     gl = getGL();
+    gl.enable(gl.DEPTH_TEST);
 
     tMakeRect(gl, "rect");
     scene.rect.rotation = [-55 * Math.PI / 180, 0, 0];
@@ -91,7 +92,7 @@ function main() {
 
 function renderScene(time, deltatime) {
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     for(let i in scene) {
         let rect = scene[i];
