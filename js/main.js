@@ -142,8 +142,8 @@ function main() {
         const angle = (20 * i) * Math.PI / 180;
         rect.rotation = [angle, angle*0.3, angle*0.5];
 
-        rect.shader.getUniform("uAmbientLightColor").data = [0, 0, 0];
-        rect.shader.getUniform("uSunDirection").data = [1/3, 1/3, 1/3];
+        rect.shader.getUniform("uAmbientLightColor").data = [0.1, 0.1, 0.1];
+        rect.shader.getUniform("uSunDir").data = [1/2, 0, 1/2];
         rect.shader.getUniform("uSunColor").data = [1, 1, 1];
     }
 
@@ -172,6 +172,7 @@ function renderScene(time, deltatime) {
         rect.shader.getUniform("uViewMatrix").data = [false, viewMatrix];
         rect.shader.getUniform("uProjectionMatrix").data = [false, projectionMatrix];
         rect.shader.getUniform("uTime").data = [time];
+        rect.shader.getUniform("uViewPos").data = [camX, 0, camZ];
         rect.draw(gl);
     }
 }
@@ -184,6 +185,7 @@ function tMakeRect(gl, name) {
     rect.buffers.uv = loadBuffer(gl, triangleUV, gl.ARRAY_BUFFER, gl.STATIC_DRAW);
     rect.textures.albedo = new glTexture(gl, 0, "img/Tiles28_col.jpg");
     rect.textures.ao = new glTexture(gl, 1, "img/Tiles28_AO.jpg");
+    rect.textures.roughness = new glTexture(gl, 2, "img/Tiles28_disp.jpg");
     rect.vertexCount = triangleIndices.length;
 
     let basicVsh = "", basicFsh = "";
@@ -202,9 +204,11 @@ function tMakeRect(gl, name) {
             new glUniform("uTime", [0.0], "1f"),
             new glUniform("uAlbedoSampler", [0], "1i"),
             new glUniform("uAOSampler", [1], "1i"),
+            new glUniform("uRoughnessSampler", [2], "1i"),
             new glUniform("uAmbientLightColor", [0, 0, 0], "3f"),
-            new glUniform("uSunDirection", [0, 0, 0], "3f"),
+            new glUniform("uSunDir", [0, 0, 0], "3f"),
             new glUniform("uSunColor", [1, 1, 1], "3f"),
+            new glUniform("uViewPos", [0, 0, 0], "3f"),
         ]);
 
     scene[name] = rect;
